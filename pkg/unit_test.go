@@ -6,7 +6,10 @@ import (
 )
 
 func TestValidateAgentPkg(t *testing.T) {
-    agentPkg := AgentPkg{/* Initialize with test data */}
+    agentPkg := &AgentPkg{
+        Name:    "test-agent",
+        Version: "1.0.0",
+    }
     err := ValidateAgentPkg(agentPkg)
     assert.NoError(t, err)
 }

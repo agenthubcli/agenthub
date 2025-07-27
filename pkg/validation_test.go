@@ -9,6 +9,7 @@ func TestValidateYAMLSpecs(t *testing.T) {
     // Assuming that LoadAgentPkg loads a sample agent package
     agentPkg, err := LoadAgentPkg("sample_agent.yaml")
     assert.NoError(t, err)
+    assert.NotNil(t, agentPkg)
     err = ValidateAgentPkg(agentPkg)
     assert.NoError(t, err)
 }
