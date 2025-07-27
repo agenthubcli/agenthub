@@ -1,4 +1,4 @@
-package tests
+package main
 
 import (
     "testing"
@@ -21,4 +21,4 @@ func TestCompleteWorkflow(t *testing.T) {
     // Install
     err = ExecuteCommand("install")
     assert.NoError(t, err)
-}
+} 

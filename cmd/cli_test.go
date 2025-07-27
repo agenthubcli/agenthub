@@ -1,4 +1,4 @@
-package tests
+package cmd
 
 import (
     "testing"
@@ -20,4 +20,4 @@ func TestCliCommands(t *testing.T) {
     output, err = ExecuteCliCommand("publish")
     assert.NoError(t, err)
     assert.Contains(t, output, "Publishing package to the GitHub registry...")
-}
+} 
