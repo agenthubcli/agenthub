@@ -67,3 +67,36 @@ jobs:
           git config user.email github-actions@github.com
           git commit -am "Update to ${{ env.VERSION }}"
           git push
+
+      - name: Checkout Chocolatey repo
+        uses: actions/checkout@v4
+        with:
+          repository: agenthubcli/chocolatey
+          path: chocolatey
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Chocolatey nuspec and installer
+        run: |
+          cd chocolatey
+          sed -i "s|<version>.*</version>|<version>${{ env.VERSION }}</version>|" agenthub.nuspec
+          cat <<EOF > tools/chocolateyInstall.ps1
+          $toolsDir   = "\$(Split-Path -parent \$MyInvocation.MyCommand.Definition)"
+          $url        = "https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip"
+          $exe        = "agenthub.exe"
+          Install-ChocolateyZipPackage 'agenthub' \$url \$toolsDir
+          EOF
+
+      - name: Commit Chocolatey changes
+        run: |
+          cd chocolatey
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "Update to ${{ env.VERSION }}"
+          git push
+
+      - name: Build and Push Chocolatey Package
+        run: |
+          cd chocolatey
+          choco apikey --key ${{ secrets.CHOCOLATEY_API_KEY }} --source https://push.chocolatey.org/
+          choco pack
+          choco push agenthub.${{ env.VERSION }}.nupkg --source https://push.chocolatey.org/
