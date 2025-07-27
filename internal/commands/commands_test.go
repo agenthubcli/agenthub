@@ -129,29 +129,3 @@ func TestBuildPackageInvalidPath(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create output directory")
 }
-
-func TestLegacyExecuteCommand(t *testing.T) {
-	testCases := []struct {
-		name    string
-		command string
-		wantErr bool
-	}{
-		{"init command", "init", false},
-		{"build command", "build", false},
-		{"publish command", "publish", false},
-		{"install command", "install", false},
-		{"unknown command", "unknown", true},
-		{"empty command", "", true},
-	}
-	
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := ExecuteCommand(tc.command)
-			if tc.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-} 

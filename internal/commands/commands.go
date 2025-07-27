@@ -86,19 +86,3 @@ func BuildPackage(verbose bool, outputDir string) error {
 	fmt.Printf("✅ Package built successfully in %s\n", outputDir)
 	return nil
 }
-
-// Legacy function for backward compatibility - can be removed later
-func ExecuteCommand(command string) error {
-	switch command {
-	case "init":
-		return InitProject("default-project")
-	case "build":
-		return BuildPackage(false, "dist")
-	case "publish":
-		return PublishPackage(false, false)
-	case "install":
-		return InstallAll()
-	default:
-		return fmt.Errorf("unknown command: %s", command)
-	}
-} 
