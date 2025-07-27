@@ -1,0 +1,125 @@
+name: Version Check
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "Makefile"
+      - "agenthub/**"
+      - ".github/workflows/**"
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    name: Check if version has been incremented
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if version check should be skipped
+        id: skip-check
+        run: |
+          # Check for skip labels or commit messages
+          if echo "${{ github.event.pull_request.title }}" | grep -qi "\[skip version\]"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "ℹ️ Version check skipped due to [skip version] in PR title"
+          elif git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -qi "\[skip version\]"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "ℹ️ Version check skipped due to [skip version] in commit message"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get current version from Makefile
+        if: steps.skip-check.outputs.skip != 'true'
+        id: current-version
+        run: |
+          VERSION=$(grep "^VERSION?=" Makefile | cut -d'=' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Get base branch version
+        if: steps.skip-check.outputs.skip != 'true'
+        id: base-version
+        run: |
+          git checkout ${{ github.base_ref }}
+          BASE_VERSION=$(grep "^VERSION?=" Makefile | cut -d'=' -f2)
+          echo "version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "Base version: $BASE_VERSION"
+          git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: Validate version format
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          VERSION="${{ steps.current-version.outputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'; then
+            echo "❌ Version format is invalid: $VERSION"
+            echo "Expected format: MAJOR.MINOR.PATCH (e.g., 1.2.3, 2.0.0-beta.1)"
+            exit 1
+          else
+            echo "✅ Version format is valid: $VERSION"
+          fi
+
+      - name: Compare versions semantically
+        if: steps.skip-check.outputs.skip != 'true'
+        run: |
+          CURRENT="${{ steps.current-version.outputs.version }}"
+          BASE="${{ steps.base-version.outputs.version }}"
+
+          echo "Base branch version: $BASE"
+          echo "PR branch version: $CURRENT"
+
+          # Function to compare semantic versions
+          version_compare() {
+            # Remove any pre-release/build metadata for comparison
+            local v1=$(echo "$1" | sed 's/[-+].*//')
+            local v2=$(echo "$2" | sed 's/[-+].*//')
+            
+            # Split versions into arrays
+            IFS='.' read -ra V1 <<< "$v1"
+            IFS='.' read -ra V2 <<< "$v2"
+            
+            # Pad arrays to same length
+            while [ ${#V1[@]} -lt 3 ]; do V1+=("0"); done
+            while [ ${#V2[@]} -lt 3 ]; do V2+=("0"); done
+            
+            # Compare each component
+            for i in {0..2}; do
+              if [ "${V1[i]}" -gt "${V2[i]}" ]; then
+                return 1  # v1 > v2
+              elif [ "${V1[i]}" -lt "${V2[i]}" ]; then
+                return 2  # v1 < v2
+              fi
+            done
+            return 0  # v1 == v2
+          }
+
+          if [ "$CURRENT" = "$BASE" ]; then
+            echo "❌ Version has not been incremented!"
+            echo "Please update the VERSION in the Makefile before merging this PR."
+            echo "Current version: $CURRENT"
+            echo "Expected: A version higher than $BASE"
+            echo ""
+            echo "💡 To skip this check, add '[skip version]' to your PR title or commit message"
+            exit 1
+          fi
+
+          version_compare "$CURRENT" "$BASE"
+          result=$?
+
+          if [ $result -eq 2 ]; then
+            echo "❌ Version has been decremented!"
+            echo "Current version ($CURRENT) is lower than base version ($BASE)"
+            echo "Please ensure the new version is higher than the base version."
+            exit 1
+          elif [ $result -eq 0 ]; then
+            echo "❌ Version has not been incremented!"
+            echo "Versions are identical: $CURRENT"
+            echo "Please increment the version in the Makefile."
+            exit 1
+          else
+            echo "✅ Version has been properly incremented from $BASE to $CURRENT"
+          fi
