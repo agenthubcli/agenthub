@@ -1,0 +1,69 @@
+# .github/workflows/update-manifests.yml
+
+name: Update Installer Manifests
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: vars
+        run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Download release assets
+        run: |
+          mkdir assets
+          cd assets
+          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-darwin-amd64.zip
+          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-darwin-amd64.zip.sha256
+          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip
+          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256
+
+      - name: Checkout homebrew tap repo
+        uses: actions/checkout@v4
+        with:
+          repository: agenthubcli/homebrew-tap
+          path: homebrew-tap
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew formula
+        run: |
+          sha=$(cut -d' ' -f1 assets/agenthub-${{ env.VERSION }}-darwin-amd64.zip.sha256)
+          sed -i "s|url \".*\"|url \"https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-darwin-amd64.zip\"|" homebrew-tap/Formula/agenthub.rb
+          sed -i "s|sha256 \".*\"|sha256 \"$sha\"|" homebrew-tap/Formula/agenthub.rb
+
+      - name: Commit Homebrew changes
+        run: |
+          cd homebrew-tap
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "Update to ${{ env.VERSION }}"
+          git push
+
+      - name: Checkout Scoop bucket repo
+        uses: actions/checkout@v4
+        with:
+          repository: agenthubcli/scoop-agenthub
+          path: scoop-agenthub
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Scoop manifest
+        run: |
+          sha=$(cut -d' ' -f1 assets/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256)
+          jq ".version = \"${{ env.VERSION }}\" | .url = \"https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip\" | .hash = \"$sha\"" scoop-agenthub/agenthub.json > scoop-agenthub/agenthub.json.tmp
+          mv scoop-agenthub/agenthub.json.tmp scoop-agenthub/agenthub.json
+
+      - name: Commit Scoop changes
+        run: |
+          cd scoop-agenthub
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "Update to ${{ env.VERSION }}"
+          git push
