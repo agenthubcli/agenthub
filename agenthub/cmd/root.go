@@ -13,11 +13,11 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
     Use:   "agenthub",
-    Short: "A unified package manager, control plane, and development environment for agents, tools, chains, prompts, and datasets",
-    Long: `A unified package manager, control plane, and development environment for agents, tools, chains, prompts, and datasets
-    
-A unified package manager, control plane, and development environment 
-for agents, tools, chains, prompts, and datasets.`,
+    Short: "A unified package manager for Agents, Tools, Chains, Prompts, and Datasets",
+    Long: `A unified package manager, for Agents, Tools, Chains, Prompts, and Datasets.`,
+    Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Hello from AgentHub 🎉")
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
