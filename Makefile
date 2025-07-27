@@ -54,7 +54,7 @@ cross-compile: clean
 	@echo "Cross-compilation complete!"
 
 # Package for distribution
-package: cross-compile
+package-unix: cross-compile
 	@echo "Creating distribution packages..."
 	
 	# Create tarballs for Unix-like systems
@@ -67,6 +67,15 @@ package: cross-compile
 	cd ${BUILD_DIR}/windows-amd64 && zip ../agenthub-${VERSION}-windows-amd64.zip ${BINARY_NAME}.exe
 	
 	@echo "Packages created in ${BUILD_DIR}/"
+
+package-release: cross-compile
+	@mkdir -p release
+	@echo "Packaging binaries for release..."
+	@for os in darwin-amd64 darwin-arm64 linux-amd64 windows-amd64; do \
+		zip -j release/${BINARY_NAME}-${VERSION}-$$os.zip ${BUILD_DIR}/$$os/${BINARY_NAME}*; \
+		shasum -a 256 release/${BINARY_NAME}-${VERSION}-$$os.zip > release/${BINARY_NAME}-${VERSION}-$$os.zip.sha256; \
+	done
+
 
 # Development server (if applicable)
 dev:
