@@ -107,8 +107,10 @@ jobs:
             exit 1
           fi
 
+          set +e  # Temporarily disable exit on error
           version_compare "$CURRENT" "$BASE"
           result=$?
+          set -e  # Re-enable exit on error
 
           if [ $result -eq 2 ]; then
             echo "❌ Version has been decremented!"
