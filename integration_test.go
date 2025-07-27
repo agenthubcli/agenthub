@@ -3,22 +3,23 @@ package main
 import (
     "testing"
     "github.com/stretchr/testify/assert"
+    "agenthub/internal/commands"
 )
 
 func TestCompleteWorkflow(t *testing.T) {
     // Initialize
-    err := ExecuteCommand("init")
+    err := commands.ExecuteCommand("init")
     assert.NoError(t, err)
 
     // Build
-    err = ExecuteCommand("build")
+    err = commands.ExecuteCommand("build")
     assert.NoError(t, err)
 
     // Publish
-    err = ExecuteCommand("publish")
+    err = commands.ExecuteCommand("publish")
     assert.NoError(t, err)
 
     // Install
-    err = ExecuteCommand("install")
+    err = commands.ExecuteCommand("install")
     assert.NoError(t, err)
 } 
