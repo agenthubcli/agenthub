@@ -42,20 +42,6 @@ jobs:
         id: vars
         run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: Wait for release to be available
-        run: |
-          echo "Waiting for release assets to be available..."
-          sleep 30
-
-      - name: Download release assets
-        run: |
-          mkdir assets
-          cd assets
-          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-darwin-amd64.zip
-          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-darwin-amd64.zip.sha256
-          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip
-          wget https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256
-
       - name: Checkout homebrew tap repo
         uses: actions/checkout@v4
         with:
@@ -65,7 +51,7 @@ jobs:
 
       - name: Update Homebrew formula
         run: |
-          sha=$(cut -d' ' -f1 assets/agenthub-${{ env.VERSION }}-darwin-amd64.zip.sha256)
+          sha=$(cut -d' ' -f1 release/agenthub-${{ env.VERSION }}-darwin-amd64.zip.sha256)
           sed -i "s|url \".*\"|url \"https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-darwin-amd64.zip\"|" homebrew-tap/Formula/agenthub.rb
           sed -i "s|sha256 \".*\"|sha256 \"$sha\"|" homebrew-tap/Formula/agenthub.rb
 
@@ -86,7 +72,7 @@ jobs:
 
       - name: Update Scoop manifest
         run: |
-          sha=$(cut -d' ' -f1 assets/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256)
+          sha=$(cut -d' ' -f1 release/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256)
           jq ".version = \"${{ env.VERSION }}\" | .url = \"https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip\" | .hash = \"$sha\"" scoop-agenthub/agenthub.json > scoop-agenthub/agenthub.json.tmp
           mv scoop-agenthub/agenthub.json.tmp scoop-agenthub/agenthub.json
 
