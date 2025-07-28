@@ -27,6 +27,7 @@ vendor/
 /bin/
 /dist/
 /release/
+agenthub
 agenthub*.exe
 
 # Build artifacts
