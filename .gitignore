@@ -27,6 +27,7 @@ vendor/
 /bin/
 /dist/
 /release/
+agenthub
 agenthub*.exe
 
 # Build artifacts
@@ -112,4 +113,7 @@ tramp
 [._]*.sw[a-p]
 [._]s[a-rt-v][a-z]
 [._]ss[a-gi-z]
-[._]sw[a-p] 
+[._]sw[a-p]
+
+# Cursor
+.cursor/

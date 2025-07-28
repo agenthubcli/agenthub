@@ -4,7 +4,7 @@
 
 # Variables
 BINARY_NAME=agenthub
-VERSION?=0.2.6
+VERSION?=0.3.0
 BUILD_DIR=dist
 LDFLAGS=-ldflags "-X main.version=${VERSION}"
 
