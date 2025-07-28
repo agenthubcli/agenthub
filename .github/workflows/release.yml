@@ -96,12 +96,11 @@ jobs:
           cd chocolatey
           sed -i "s|<version>.*</version>|<version>${{ env.VERSION }}</version>|" agenthub.nuspec
           cat <<EOF > tools/chocolateyInstall.ps1
-$$toolsDir = "$$(Split-Path -parent $$MyInvocation.MyCommand.Definition)"
-$$url = "https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip"
-$$packageName = "agenthub"
-
-Install-ChocolateyZipPackage -PackageName $$packageName -Url $$url -UnzipLocation $$toolsDir
-EOF
+          $$toolsDir = "$$(Split-Path -parent $$MyInvocation.MyCommand.Definition)"
+          $$url = "https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip"
+          $$packageName = "agenthub"
+          Install-ChocolateyZipPackage -PackageName $$packageName -Url $$url -UnzipLocation $$toolsDir
+          EOF
 
       - name: Commit Chocolatey changes
         run: |
