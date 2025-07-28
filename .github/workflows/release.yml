@@ -40,7 +40,7 @@ jobs:
 
       - name: Extract version from tag
         id: vars
-        run: echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF##*/v}" >> $GITHUB_ENV
 
       - name: Checkout homebrew tap repo
         uses: actions/checkout@v4
