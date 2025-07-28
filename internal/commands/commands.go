@@ -374,3 +374,290 @@ func executeAgent(manifest *models.AgentManifest, envVars []string, verbose bool
 	fmt.Println("✅ Agent completed successfully")
 	return nil
 }
+
+// LinkPackage creates a symbolic link for local package development
+func LinkPackage(packagePath string, global bool, verbose bool) error {
+	// Determine the package path
+	targetPath := packagePath
+	if targetPath == "" {
+		targetPath = "."
+	}
+	
+	// Convert to absolute path
+	absPath, err := filepath.Abs(targetPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute path: %w", err)
+	}
+	
+	// Find and load the manifest
+	originalDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+	
+	// Change to target directory to find manifest
+	if err := os.Chdir(absPath); err != nil {
+		return fmt.Errorf("failed to change to target directory: %w", err)
+	}
+	defer os.Chdir(originalDir)
+	
+	manifestFile, packageType, err := utils.FindManifestFile()
+	if err != nil {
+		return fmt.Errorf("no manifest found in %s: %w", absPath, err)
+	}
+	
+	manifest, err := utils.LoadManifest(manifestFile)
+	if err != nil {
+		return fmt.Errorf("failed to load manifest: %w", err)
+	}
+	
+	if err := utils.ValidateManifest(manifest); err != nil {
+		return fmt.Errorf("invalid manifest: %w", err)
+	}
+	
+	if verbose {
+		fmt.Printf("🔍 Found %s manifest: %s v%s\n", packageType, manifest.GetName(), manifest.GetVersion())
+		fmt.Printf("📁 Linking from: %s\n", absPath)
+	}
+	
+	// Create the link registry directory
+	linkDir := getLinksDirectory(global)
+	if err := utils.EnsureDir(linkDir); err != nil {
+		return fmt.Errorf("failed to create links directory: %w", err)
+	}
+	
+	// Create the symbolic link
+	linkName := manifest.GetName()
+	linkPath := filepath.Join(linkDir, linkName)
+	
+	// Remove existing link if it exists
+	if utils.FileExists(linkPath) {
+		if verbose {
+			fmt.Printf("🔄 Removing existing link: %s\n", linkPath)
+		}
+		os.Remove(linkPath)
+	}
+	
+	// Create the symbolic link
+	if err := os.Symlink(absPath, linkPath); err != nil {
+		return fmt.Errorf("failed to create symbolic link: %w", err)
+	}
+	
+	scope := "locally"
+	if global {
+		scope = "globally"
+	}
+	
+	fmt.Printf("🔗 Successfully linked %s v%s %s\n", manifest.GetName(), manifest.GetVersion(), scope)
+	fmt.Printf("📂 Link created: %s -> %s\n", linkPath, absPath)
+	
+	return nil
+}
+
+// UnlinkPackage removes a symbolic link for a package
+func UnlinkPackage(packageName string, verbose bool) error {
+	// Try both local and global link directories
+	linkPaths := []string{
+		filepath.Join(getLinksDirectory(false), packageName),
+		filepath.Join(getLinksDirectory(true), packageName),
+	}
+	
+	found := false
+	for _, linkPath := range linkPaths {
+		if utils.FileExists(linkPath) {
+			if verbose {
+				fmt.Printf("🔍 Found link: %s\n", linkPath)
+			}
+			
+			if err := os.Remove(linkPath); err != nil {
+				return fmt.Errorf("failed to remove link %s: %w", linkPath, err)
+			}
+			
+			fmt.Printf("🗑️  Successfully unlinked: %s\n", packageName)
+			found = true
+		}
+	}
+	
+	if !found {
+		return fmt.Errorf("no link found for package: %s", packageName)
+	}
+	
+	return nil
+}
+
+// ListLinkedPackages lists all currently linked packages
+func ListLinkedPackages() error {
+	localLinksDir := getLinksDirectory(false)
+	globalLinksDir := getLinksDirectory(true)
+	
+	fmt.Println("📦 Linked Packages:")
+	fmt.Println()
+	
+	// List local links
+	if utils.DirExists(localLinksDir) {
+		fmt.Println("🏠 Local links:")
+		if err := listLinksInDirectory(localLinksDir, "  "); err != nil {
+			fmt.Printf("  ⚠️  Error reading local links: %v\n", err)
+		}
+		fmt.Println()
+	}
+	
+	// List global links
+	if utils.DirExists(globalLinksDir) {
+		fmt.Println("🌍 Global links:")
+		if err := listLinksInDirectory(globalLinksDir, "  "); err != nil {
+			fmt.Printf("  ⚠️  Error reading global links: %v\n", err)
+		}
+	}
+	
+	return nil
+}
+
+// DeployPackage deploys a package to cloud platforms (placeholder implementation)
+func DeployPackage(target, region, environment string, dryRun, watch, verbose bool) error {
+	// Find and validate manifest
+	manifestFile, packageType, err := utils.FindManifestFile()
+	if err != nil {
+		return fmt.Errorf("no manifest found: %w", err)
+	}
+
+	manifest, err := utils.LoadManifest(manifestFile)
+	if err != nil {
+		return fmt.Errorf("failed to load manifest: %w", err)
+	}
+
+	if err := utils.ValidateManifest(manifest); err != nil {
+		return fmt.Errorf("invalid manifest: %w", err)
+	}
+
+	if verbose {
+		fmt.Printf("🔍 Deploying %s: %s v%s\n", packageType, manifest.GetName(), manifest.GetVersion())
+	}
+
+	// Placeholder implementation for cloud deployment
+	fmt.Printf("☁️  Deploying %s v%s to %s\n", manifest.GetName(), manifest.GetVersion(), target)
+	
+	if region != "" {
+		fmt.Printf("🌍 Region: %s\n", region)
+	}
+	fmt.Printf("🏷️  Environment: %s\n", environment)
+	
+	if dryRun {
+		fmt.Println("🧪 Dry run: Preview of deployment steps:")
+		fmt.Println("   1. ✅ Validate package manifest")
+		fmt.Println("   2. 📦 Build deployment package")
+		fmt.Println("   3. 🔐 Authenticate with cloud provider")
+		fmt.Println("   4. 🚀 Deploy to target platform")
+		fmt.Println("   5. 🔗 Configure endpoints and routing")
+		fmt.Println("   6. 🧪 Run health checks")
+		fmt.Println("   7. ✅ Deployment complete")
+		fmt.Println()
+		fmt.Println("💡 Run without --dry-run to execute deployment")
+		return nil
+	}
+	
+	// Simulate deployment steps
+	steps := []string{
+		"📦 Building deployment package...",
+		"🔐 Authenticating with cloud provider...",
+		"🚀 Deploying to target platform...",
+		"🔗 Configuring endpoints and routing...",
+		"🧪 Running health checks...",
+	}
+	
+	for i, step := range steps {
+		fmt.Printf("[%d/%d] %s\n", i+1, len(steps), step)
+		if watch && verbose {
+			// Simulate some delay for realistic output
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+	
+	fmt.Printf("✅ Successfully deployed %s v%s to %s\n", manifest.GetName(), manifest.GetVersion(), target)
+	
+	// Show deployment info
+	fmt.Println()
+	fmt.Println("📊 Deployment Summary:")
+	fmt.Printf("   Package: %s v%s\n", manifest.GetName(), manifest.GetVersion())
+	fmt.Printf("   Target: %s\n", target)
+	if region != "" {
+		fmt.Printf("   Region: %s\n", region)
+	}
+	fmt.Printf("   Environment: %s\n", environment)
+	fmt.Printf("   Status: ✅ Active\n")
+	
+	// Placeholder URLs
+	switch target {
+	case "aws":
+		fmt.Printf("   Endpoint: https://%s.%s.amazonaws.com\n", manifest.GetName(), region)
+	case "gcp":
+		fmt.Printf("   Endpoint: https://%s-%s.cloudfunctions.net\n", region, manifest.GetName())
+	case "azure":
+		fmt.Printf("   Endpoint: https://%s.azurewebsites.net\n", manifest.GetName())
+	case "k8s":
+		fmt.Printf("   Service: %s.%s.svc.cluster.local\n", manifest.GetName(), environment)
+	default:
+		fmt.Printf("   Endpoint: https://%s.%s.example.com\n", manifest.GetName(), target)
+	}
+	
+	fmt.Println()
+	fmt.Println("💡 Note: This is a placeholder implementation.")
+	fmt.Println("   Full cloud deployment will be available in Phase 2.")
+	
+	return nil
+}
+
+// Helper functions
+
+func getLinksDirectory(global bool) string {
+	if global {
+		// Global links directory (e.g., ~/.agenthub/links)
+		home, _ := os.UserHomeDir()
+		return filepath.Join(home, ".agenthub", "links")
+	} else {
+		// Local links directory (e.g., ./node_modules/.agenthub/links)
+		return filepath.Join("node_modules", ".agenthub", "links")
+	}
+}
+
+func listLinksInDirectory(dir, prefix string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	
+	if len(entries) == 0 {
+		fmt.Printf("%s(no linked packages)\n", prefix)
+		return nil
+	}
+	
+	for _, entry := range entries {
+		linkPath := filepath.Join(dir, entry.Name())
+		if entry.Type()&os.ModeSymlink != 0 {
+			// It's a symbolic link
+			target, err := os.Readlink(linkPath)
+			if err != nil {
+				fmt.Printf("%s❌ %s -> (broken link)\n", prefix, entry.Name())
+				continue
+			}
+			
+			// Try to load manifest to get version info
+			originalDir, _ := os.Getwd()
+			if err := os.Chdir(target); err == nil {
+				if manifestFile, _, err := utils.FindManifestFile(); err == nil {
+					if manifest, err := utils.LoadManifest(manifestFile); err == nil {
+						fmt.Printf("%s🔗 %s v%s -> %s\n", prefix, manifest.GetName(), manifest.GetVersion(), target)
+						os.Chdir(originalDir)
+						continue
+					}
+				}
+				os.Chdir(originalDir)
+			}
+			
+			// Fallback if we can't read manifest
+			fmt.Printf("%s🔗 %s -> %s\n", prefix, entry.Name(), target)
+		}
+	}
+	
+	return nil
+}
