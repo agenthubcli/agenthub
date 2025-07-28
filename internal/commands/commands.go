@@ -36,34 +36,38 @@ func InitProject(projectName string) error {
 		}
 	}
 
-	// Create a sample agent manifest
-	agentManifest := &models.AgentManifest{
-		Name:        projectName,
-		Version:     "0.1.0",
-		Description: fmt.Sprintf("A sample agent project: %s", projectName),
-		Author:      "Your Name",
-		License:     "MIT",
-		Runtime:     "python",
-		EntryPoint:  "main.py",
-		Dependencies: map[string]string{},
-		Environment: map[string]string{
-			"PYTHONPATH": ".",
-		},
-		Config: map[string]interface{}{
-			"max_iterations": 10,
-			"timeout":        30,
-		},
-		Tags: []string{"sample", "agent"},
-	}
-
-	// Save the agent manifest
+	// Create a sample agent manifest (only if it doesn't exist)
 	manifestPath := filepath.Join(projectName, "agent.yaml")
-	if err := utils.SaveManifest(agentManifest, manifestPath); err != nil {
-		return fmt.Errorf("failed to create agent manifest: %w", err)
+	if !utils.FileExists(manifestPath) {
+		agentManifest := &models.AgentManifest{
+			Name:        projectName,
+			Version:     "0.1.0",
+			Description: fmt.Sprintf("A sample agent project: %s", projectName),
+			Author:      "Your Name",
+			License:     "MIT",
+			Runtime:     "python",
+			EntryPoint:  "main.py",
+			Dependencies: map[string]string{},
+			Environment: map[string]string{
+				"PYTHONPATH": ".",
+			},
+			Config: map[string]interface{}{
+				"max_iterations": 10,
+				"timeout":        30,
+			},
+			Tags: []string{"sample", "agent"},
+		}
+
+		// Save the agent manifest
+		if err := utils.SaveManifest(agentManifest, manifestPath); err != nil {
+			return fmt.Errorf("failed to create agent manifest: %w", err)
+		}
 	}
 
-	// Create a sample main.py file
-	sampleCode := `#!/usr/bin/env python3
+	// Create sample files only if they don't exist
+	pythonFile := filepath.Join(projectName, "main.py")
+	if !utils.FileExists(pythonFile) {
+		sampleCode := `#!/usr/bin/env python3
 """
 Sample Agent for AgentHub
 """
@@ -95,41 +99,43 @@ def main():
 if __name__ == "__main__":
     main()
 `
-
-	pythonFile := filepath.Join(projectName, "main.py")
-	if err := utils.CreateFileIfNotExists(pythonFile, []byte(sampleCode)); err != nil {
-		return fmt.Errorf("failed to create main.py: %w", err)
+		if err := utils.CreateFileIfNotExists(pythonFile, []byte(sampleCode)); err != nil {
+			return fmt.Errorf("failed to create main.py: %w", err)
+		}
 	}
 
-	// Create requirements.txt
-	requirements := `# Add your Python dependencies here
+	// Create requirements.txt only if it doesn't exist
+	requirementsFile := filepath.Join(projectName, "requirements.txt")
+	if !utils.FileExists(requirementsFile) {
+		requirements := `# Add your Python dependencies here
 # Example:
 # requests>=2.28.0
 # numpy>=1.21.0
 `
-
-	requirementsFile := filepath.Join(projectName, "requirements.txt")
-	if err := utils.CreateFileIfNotExists(requirementsFile, []byte(requirements)); err != nil {
-		return fmt.Errorf("failed to create requirements.txt: %w", err)
+		if err := utils.CreateFileIfNotExists(requirementsFile, []byte(requirements)); err != nil {
+			return fmt.Errorf("failed to create requirements.txt: %w", err)
+		}
 	}
 
-	// Create README.md
-	readme := fmt.Sprintf(`# %s
+	// Create README.md only if it doesn't exist
+	readmeFile := filepath.Join(projectName, "README.md")
+	if !utils.FileExists(readmeFile) {
+		readme := fmt.Sprintf(`# %s
 
 A sample AgentHub project.
 
 ## Description
 
-%s
+A sample agent project: %s
 
 ## Usage
 
 Run the agent:
-`, projectName, agentManifest.Description) + "```\nagenthub run\n```\n\n## Development\n\nInstall dependencies:\n```\npip install -r requirements.txt\n```\n"
+`, projectName, projectName) + "```\nagenthub run\n```\n\n## Development\n\nInstall dependencies:\n```\npip install -r requirements.txt\n```\n"
 
-	readmeFile := filepath.Join(projectName, "README.md")
-	if err := utils.CreateFileIfNotExists(readmeFile, []byte(readme)); err != nil {
-		return fmt.Errorf("failed to create README.md: %w", err)
+		if err := utils.CreateFileIfNotExists(readmeFile, []byte(readme)); err != nil {
+			return fmt.Errorf("failed to create README.md: %w", err)
+		}
 	}
 
 	fmt.Printf("✅ Successfully initialized project: %s\n", projectName)

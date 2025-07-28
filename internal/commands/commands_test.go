@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"agenthub/pkg/models"
+	"agenthub/pkg/utils"
 )
 
 func TestInitProject(t *testing.T) {
@@ -34,6 +36,12 @@ func TestInitProject(t *testing.T) {
 		dirPath := filepath.Join(projectDir, dir)
 		assert.DirExists(t, dirPath, "Directory %s should exist", dir)
 	}
+
+	// Verify manifest and files were created
+	assert.FileExists(t, filepath.Join(projectDir, "agent.yaml"))
+	assert.FileExists(t, filepath.Join(projectDir, "main.py"))
+	assert.FileExists(t, filepath.Join(projectDir, "requirements.txt"))
+	assert.FileExists(t, filepath.Join(projectDir, "README.md"))
 }
 
 func TestInitProjectExistingDirectory(t *testing.T) {
@@ -52,9 +60,20 @@ func TestInitProjectExistingDirectory(t *testing.T) {
 }
 
 func TestInstallAll(t *testing.T) {
+	tempDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	
+	os.Chdir(tempDir)
+	
+	// Create a sample manifest for testing
+	createSampleManifest(t, tempDir)
+	
 	err := InstallAll()
 	assert.NoError(t, err)
-	// Since this is a stub implementation, we just verify it doesn't error
+	
+	// Verify lock file was created
+	assert.FileExists(t, "agent.lock")
 }
 
 func TestInstallPackage(t *testing.T) {
@@ -76,6 +95,15 @@ func TestInstallPackage(t *testing.T) {
 }
 
 func TestPublishPackage(t *testing.T) {
+	tempDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	
+	os.Chdir(tempDir)
+	
+	// Create a sample manifest for testing
+	createSampleManifest(t, tempDir)
+	
 	testCases := []struct {
 		name    string
 		dryRun  bool
@@ -102,6 +130,9 @@ func TestBuildPackage(t *testing.T) {
 	
 	os.Chdir(tempDir)
 	
+	// Create a sample manifest for testing
+	createSampleManifest(t, tempDir)
+	
 	testCases := []struct {
 		name      string
 		verbose   bool
@@ -124,8 +155,62 @@ func TestBuildPackage(t *testing.T) {
 }
 
 func TestBuildPackageInvalidPath(t *testing.T) {
-	// Test with invalid output directory path
-	err := BuildPackage(false, "/invalid/path/that/cannot/be/created")
+	tempDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	
+	os.Chdir(tempDir)
+	
+	// Create a sample manifest so we get past manifest validation
+	createSampleManifest(t, tempDir)
+	
+	// Test with invalid output directory path that cannot be created
+	// Use a path that would fail permission-wise on most systems
+	invalidPath := "/root/invalid/path/that/cannot/be/created"
+	if os.Getenv("CI") != "" {
+		// On CI systems, use a different invalid path
+		invalidPath = "/invalid/path/that/cannot/be/created"
+	}
+	
+	err := BuildPackage(false, invalidPath)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create output directory")
+}
+
+func TestBuildPackageNoManifest(t *testing.T) {
+	tempDir := t.TempDir()
+	originalDir, _ := os.Getwd()
+	defer os.Chdir(originalDir)
+	
+	os.Chdir(tempDir)
+	
+	// Test without any manifest file
+	err := BuildPackage(false, "dist")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no manifest found")
+}
+
+// Helper function to create a sample manifest for testing
+func createSampleManifest(t *testing.T, dir string) {
+	manifest := &models.AgentManifest{
+		Name:        "test-agent",
+		Version:     "1.0.0",
+		Description: "Test agent for unit tests",
+		Author:      "Test Author",
+		License:     "MIT",
+		Runtime:     "python",
+		EntryPoint:  "main.py",
+		Dependencies: map[string]string{},
+		Environment: map[string]string{
+			"PYTHONPATH": ".",
+		},
+		Config: map[string]interface{}{
+			"test": true,
+		},
+		Tags: []string{"test"},
+	}
+	
+	manifestPath := filepath.Join(dir, "agent.yaml")
+	err := utils.SaveManifest(manifest, manifestPath)
+	assert.NoError(t, err)
 }
