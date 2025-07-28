@@ -47,7 +47,7 @@ jobs:
         with:
           repository: agenthubcli/homebrew-tap
           path: homebrew-tap
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Update Homebrew formula
         run: |
@@ -68,7 +68,7 @@ jobs:
         with:
           repository: agenthubcli/scoop-agenthub
           path: scoop-agenthub
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Update Scoop manifest
         run: |
@@ -89,7 +89,7 @@ jobs:
         with:
           repository: agenthubcli/chocolatey
           path: chocolatey
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Update Chocolatey nuspec and installer
         run: |
