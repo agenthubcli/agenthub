@@ -118,3 +118,6 @@ tramp
 test-choco
 workflow-test
 e2e-test
+
+# Cursor
+.cursor/
