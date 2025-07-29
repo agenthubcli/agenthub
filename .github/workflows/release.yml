@@ -93,16 +93,8 @@ jobs:
 
       - name: Update Chocolatey nuspec and installer
         run: |
-          cd chocolatey
-          sed -i "s|<version>.*</version>|<version>${{ env.VERSION }}</version>|" agenthub.nuspec
-          sha=$(cut -d' ' -f1 ../release/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256)
-          cat > tools/chocolateyInstall.ps1 << EOF
-\$toolsDir = "\$(Split-Path -parent \$MyInvocation.MyCommand.Definition)"
-\$url = "https://github.com/agenthubcli/agenthub/releases/download/${{ env.VERSION }}/agenthub-${{ env.VERSION }}-windows-amd64.zip"
-\$packageName = "agenthub"
-\$checksum = "$sha"
-Install-ChocolateyZipPackage -PackageName \$packageName -Url \$url -UnzipLocation \$toolsDir -Checksum \$checksum -ChecksumType sha256
-EOF
+          scripts/generate-nuspec.sh "${{ env.VERSION }}" "chocolatey/agenthub.nuspec"
+          scripts/generate-chocolatey-install.sh "${{ env.VERSION }}" "release/agenthub-${{ env.VERSION }}-windows-amd64.zip.sha256" "chocolatey/tools/chocolateyInstall.ps1"
 
       - name: Commit Chocolatey changes
         run: |

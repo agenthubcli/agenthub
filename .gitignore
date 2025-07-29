@@ -116,3 +116,5 @@ tramp
 
 # Chocolatey
 test-choco
+workflow-test
+e2e-test

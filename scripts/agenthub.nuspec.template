@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>agenthub</id>
+    <version>{{VERSION}}</version>
+    <packageSourceUrl>https://github.com/agenthubcli/agenthub</packageSourceUrl>
+    <owners>agenthubcli</owners>
+    <title>AgentHub CLI</title>
+    <authors>AgentHub Team</authors>
+    <projectUrl>https://github.com/agenthubcli/agenthub</projectUrl>
+    <copyright>2025 AgentHub</copyright>
+    <licenseUrl>https://github.com/agenthubcli/agenthub/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>cli agent ai tools</tags>
+    <summary>Universal package manager and runtime for AI-native agents, tools, chains, and prompts</summary>
+    <description>AgentHub is a universal package manager and runtime for AI-native agents, tools, chains, and prompts. It provides a CLI interface for discovering, installing, running, and publishing AI components.</description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package> 
